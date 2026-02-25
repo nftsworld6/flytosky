@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+  AFFILIATE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String
+  role          Role     @default(USER)
+  affiliateCode String?  @unique
+  createdAt     DateTime @default(now())
+
+  bookings         Booking[]
+  affiliateTracking AffiliateTracking[]
+
+  @@map("users")
+}
+
+model Package {
+  id         String   @id @default(cuid())
+  title      String
+  location   String
+  hotelName  String
+  basePrice  Float
+  nights     Int
+  inclusions Json
+  image      String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  bookings Booking[]
+
+  @@map("packages")
+}
+
+model Booking {
+  id         String        @id @default(cuid())
+  userId     String
+  packageId  String
+  totalPrice Float
+  status     BookingStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  package  Package  @relation(fields: [packageId], references: [id])
+  tracking AffiliateTracking?
+
+  @@map("bookings")
+}
+
+model AffiliateTracking {
+  id          String  @id @default(cuid())
+  affiliateId String
+  bookingId   String  @unique
+  commission  Float
+  createdAt   DateTime @default(now())
+
+  affiliate User    @relation(fields: [affiliateId], references: [id])
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  @@map("affiliate_tracking")
+}
