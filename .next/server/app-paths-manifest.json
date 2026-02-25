@@ -1,17 +1,1 @@
-{
-  "/_not-found/page": "app/_not-found/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/api/modules/affiliates/route": "app/api/modules/affiliates/route.js",
-  "/api/modules/auth/route": "app/api/modules/auth/route.js",
-  "/affiliate/page": "app/affiliate/page.js",
-  "/api/modules/booking/route": "app/api/modules/booking/route.js",
-  "/api/modules/flights/route": "app/api/modules/flights/route.js",
-  "/api/modules/hotels/route": "app/api/modules/hotels/route.js",
-  "/api/modules/packages/[id]/route": "app/api/modules/packages/[id]/route.js",
-  "/api/modules/packages/route": "app/api/modules/packages/route.js",
-  "/api/modules/users/route": "app/api/modules/users/route.js",
-  "/packages/[id]/page": "app/packages/[id]/page.js",
-  "/packages/page": "app/packages/page.js",
-  "/page": "app/page.js",
-  "/search/page": "app/search/page.js"
-}
+{}

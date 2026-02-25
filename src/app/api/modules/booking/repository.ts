@@ -1,12 +1,11 @@
 import { prisma } from '@/lib/database/prisma'
-import type { Booking } from '@prisma/client'
+import type { Booking, BookingType } from '@prisma/client'
 
 export class BookingRepository {
   async findAll(): Promise<Booking[]> {
     return prisma.booking.findMany({
       include: {
         user: true,
-        package: true,
         tracking: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -18,7 +17,6 @@ export class BookingRepository {
       where: { id },
       include: {
         user: true,
-        package: true,
         tracking: true,
       },
     })
@@ -28,7 +26,6 @@ export class BookingRepository {
     return prisma.booking.findMany({
       where: { userId },
       include: {
-        package: true,
         tracking: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -37,14 +34,14 @@ export class BookingRepository {
 
   async create(data: {
     userId: string
-    packageId: string
+    type: BookingType
+    itemId: string
     totalPrice: number
   }): Promise<Booking> {
     return prisma.booking.create({
       data,
       include: {
         user: true,
-        package: true,
       },
     })
   }
