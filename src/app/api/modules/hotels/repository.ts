@@ -18,7 +18,7 @@ export class HotelsRepository {
   async searchHotels(location: string): Promise<Hotel[]> {
     return prisma.hotel.findMany({
       where: {
-        location: { contains: location, mode: 'insensitive' },
+        location: { contains: location },
         isActive: true,
       },
       orderBy: { rating: 'desc' },
@@ -30,7 +30,7 @@ export class HotelsRepository {
     location: string
     rating: number
     pricePerNight: number
-    amenities: string[]
+    amenities: string
     image: string
   }): Promise<Hotel> {
     return prisma.hotel.create({
@@ -43,7 +43,7 @@ export class HotelsRepository {
     location: string
     rating: number
     pricePerNight: number
-    amenities: string[]
+    amenities: string
     image: string
     isActive: boolean
   }>): Promise<Hotel> {

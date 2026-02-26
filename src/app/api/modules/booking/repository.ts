@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/database/prisma'
-import type { Booking, BookingType } from '@prisma/client'
+import type { Booking } from '@prisma/client'
 
 export class BookingRepository {
   async findAll(): Promise<Booking[]> {
@@ -34,7 +34,7 @@ export class BookingRepository {
 
   async create(data: {
     userId: string
-    type: BookingType
+    type: string
     itemId: string
     totalPrice: number
   }): Promise<Booking> {
@@ -52,7 +52,6 @@ export class BookingRepository {
       data: { status },
       include: {
         user: true,
-        package: true,
         tracking: true,
       },
     })

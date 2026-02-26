@@ -11,6 +11,7 @@ export class HotelsService {
     const hotels = await this.repository.findAll()
     return hotels.map(hotel => ({
       ...hotel,
+      amenities: JSON.parse(hotel.amenities),
       finalPrice: calculateFinalPrice({ basePrice: hotel.pricePerNight }),
     }))
   }
@@ -22,6 +23,7 @@ export class HotelsService {
     }
     return {
       ...hotel,
+      amenities: JSON.parse(hotel.amenities),
       finalPrice: calculateFinalPrice({ basePrice: hotel.pricePerNight }),
     }
   }
@@ -35,11 +37,19 @@ export class HotelsService {
   }
 
   async createHotel(input: CreateHotelInput) {
-    return this.repository.create(input)
+    const data = {
+      ...input,
+      amenities: JSON.stringify(input.amenities),
+    }
+    return this.repository.create(data)
   }
 
   async updateHotel(id: string, input: UpdateHotelInput) {
-    return this.repository.update(id, input)
+    const data = {
+      ...input,
+      amenities: input.amenities ? JSON.stringify(input.amenities) : undefined,
+    }
+    return this.repository.update(id, data)
   }
 
   async deleteHotel(id: string) {

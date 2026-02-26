@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { CarsService } from './service'
-import { createCarSchema } from './types'
+import { RestaurantsService } from './service'
+import { createRestaurantSchema } from './types'
 
-const carsService = new CarsService()
+const restaurantsService = new RestaurantsService()
 
 export async function GET() {
   try {
-    const cars = await carsService.getAllCars()
-    return NextResponse.json(cars)
+    const restaurants = await restaurantsService.getAllRestaurants()
+    return NextResponse.json(restaurants)
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -16,9 +16,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const input = createCarSchema.parse(body)
-    const car = await carsService.createCar(input)
-    return NextResponse.json(car, { status: 201 })
+    const input = createRestaurantSchema.parse(body)
+    const restaurant = await restaurantsService.createRestaurant(input)
+    return NextResponse.json(restaurant, { status: 201 })
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 })

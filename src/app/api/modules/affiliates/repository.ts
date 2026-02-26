@@ -35,7 +35,6 @@ export class AffiliatesRepository {
         booking: {
           include: {
             user: true,
-            package: true,
           },
         },
       },

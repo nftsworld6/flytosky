@@ -1,8 +1,7 @@
 import { z } from 'zod'
-import { BookingType } from '@prisma/client'
 
 export const createBookingSchema = z.object({
-  type: z.nativeEnum(BookingType),
+  type: z.string(),
   itemId: z.string(),
   userId: z.string(),
 })

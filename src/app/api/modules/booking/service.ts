@@ -55,7 +55,6 @@ export class BookingService {
         break
       case 'RESTAURANT':
         // Assume booking for a meal, use a fixed price or from restaurant
-        const restaurant = await this.restaurantsService.getRestaurantById(input.itemId)
         basePrice = 50 // Placeholder, could be dynamic
         break
       case 'WORK_CONTRACT':
