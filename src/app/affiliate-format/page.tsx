@@ -39,7 +39,7 @@ interface AffiliateUser {
   stats: AffiliateStats
 }
 
-export default function AffiliatePage() {
+export default function AffiliateFormatPage() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'referrals' | 'earnings' | 'settings' | 'links'>('dashboard')
   const [affiliateData, setAffiliateData] = useState<AffiliateUser | null>(null)
   const [referrals, setReferrals] = useState<Referral[]>([])

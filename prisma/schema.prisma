@@ -15,12 +15,22 @@ model User {
   name          String
   email         String   @unique
   password      String
-  role          String   @default("USER")
+  role          String   @default("USER")  // USER, AFFILIATE, ADMIN
   affiliateCode String?  @unique
+  isAffiliateActive Boolean @default(false)
+  companyName   String?
+  taxNumber     String?
+  bankAccount   String?
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  bookings         Booking[]
-  affiliateTracking AffiliateTracking[]
+  bookings              Booking[]
+  affiliateTracking     AffiliateTracking[]
+  affiliateCommissions  AffiliateCommission[]
+  affiliateSettings     AffiliateSettings?
+  createdByAdmin        User[]               @relation("AdminCreatedAffiliates")
+  createdUsers          User?                @relation("AdminCreatedAffiliates", fields: [createdByAdminId], references: [id])
+  createdByAdminId      String?
 
   @@map("users")
 }
@@ -62,9 +72,16 @@ model Car {
   location   String
   pricePerDay Float
   seats      Int
-  image      String
+  image      String?
+  description String?
+  fuelType   String?
+  transmission String?
+  mileage    String?
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  images     CarImage[]
 
   @@map("cars")
 }
@@ -76,9 +93,16 @@ model Restaurant {
   cuisine    String
   rating     Float
   priceRange String
-  image      String
+  image      String?
+  description String?
+  address    String?
+  phone      String?
+  hours      String?
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  images     RestaurantImage[]
 
   @@map("restaurants")
 }
@@ -95,6 +119,39 @@ model WorkContract {
   createdAt   DateTime @default(now())
 
   @@map("work_contracts")
+}
+
+model Yacht {
+  id         String   @id @default(cuid())
+  name       String
+  location   String
+  capacity   Int
+  pricePerDay Float
+  amenities  String
+  image      String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@map("yachts")
+}
+
+model Visa {
+  id          String   @id @default(cuid())
+  type        String
+  country     String
+  duration    Int
+  price       Float
+  requirements String
+  description String
+  processingTime String?
+  image       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  images      VisaImage[]
+
+  @@map("visas")
 }
 
 model Package {
@@ -119,7 +176,9 @@ model Booking {
   itemId     String
   totalPrice Float
   status     String        @default("PENDING")
+  affiliateId String?
   createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
   user     User     @relation(fields: [userId], references: [id])
   tracking AffiliateTracking?
@@ -132,10 +191,93 @@ model AffiliateTracking {
   affiliateId String
   bookingId   String  @unique
   commission  Float
+  commissionRate Float @default(5)  // نسبة العمولة المستخدمة
+  status      String  @default("PENDING")  // PENDING, APPROVED, PAID
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   affiliate User    @relation(fields: [affiliateId], references: [id])
   booking   Booking @relation(fields: [bookingId], references: [id])
 
   @@map("affiliate_tracking")
+}
+
+// جداول الصور
+model RestaurantImage {
+  id         String   @id @default(cuid())
+  restaurantId String
+  url        String
+  alt        String?
+  isMain     Boolean  @default(false)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@map("restaurant_images")
+}
+
+model CarImage {
+  id       String   @id @default(cuid())
+  carId    String
+  url      String
+  alt      String?
+  isMain   Boolean  @default(false)
+  order    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  car      Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@map("car_images")
+}
+
+model VisaImage {
+  id       String   @id @default(cuid())
+  visaId   String
+  url      String
+  alt      String?
+  isMain   Boolean  @default(false)
+  order    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  visa     Visa     @relation(fields: [visaId], references: [id], onDelete: Cascade)
+
+  @@map("visa_images")
+}
+
+// إعدادات العمولة الديناميكية
+model AffiliateCommission {
+  id           String   @id @default(cuid())
+  affiliateId  String
+  productType  String   // PACKAGE, FLIGHT, HOTEL, CAR, RESTAURANT, VISA, YACHT
+  commissionRate Float
+  minAmount    Float    @default(0)
+  maxAmount    Float    @default(999999)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  affiliate    User     @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@unique([affiliateId, productType])
+  @@map("affiliate_commissions")
+}
+
+// إعدادات المسوق
+model AffiliateSettings {
+  id                String   @id @default(cuid())
+  affiliateId       String   @unique
+  paymentMethod     String?
+  paymentDetails    String?
+  taxRate          Float    @default(0)
+  minimumPayout     Float    @default(100)
+  payoutFrequency   String   @default("MONTHLY")  // MONTHLY, WEEKLY, ON_DEMAND
+  isActive          Boolean  @default(true)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  affiliate         User     @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@map("affiliate_settings")
 }

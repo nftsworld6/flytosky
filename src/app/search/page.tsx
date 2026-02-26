@@ -3,79 +3,64 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
-interface FlightResult {
+interface SearchResult {
   id: string
-  airline: string
-  flightNumber: string
-  departureTime: string
-  arrivalTime: string
-  price: number
-  duration: string
-}
-
-interface HotelResult {
-  id: string
-  name: string
-  location: string
-  rating: number
-  pricePerNight: number
-  amenities: string[]
+  name?: string
+  title?: string
+  location?: string
+  price?: number
+  finalPrice?: number
+  image?: string
+  type: string
 }
 
 export default function SearchPage() {
-  const [activeTab, setActiveTab] = useState<'flights' | 'hotels'>('flights')
-  const [flights, setFlights] = useState<FlightResult[]>([])
-  const [hotels, setHotels] = useState<HotelResult[]>([])
+  const [activeTab, setActiveTab] = useState<'all' | 'flights' | 'hotels' | 'restaurants' | 'yachts' | 'packages' | 'work_contracts' | 'visas'>('all')
+  const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const handleFlightSearch = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    const searchData = {
-      origin: formData.get('origin'),
-      destination: formData.get('destination'),
-      departureDate: formData.get('departureDate'),
-      returnDate: formData.get('returnDate'),
-      passengers: parseInt(formData.get('passengers') as string),
-    }
+    const query = formData.get('query') as string
+    setSearchQuery(query)
 
     try {
-      const res = await fetch('/api/modules/flights', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(searchData),
+      const endpoints: string[] = []
+      if (activeTab === 'all' || activeTab === 'flights') endpoints.push('/api/modules/flights')
+      if (activeTab === 'all' || activeTab === 'hotels') endpoints.push('/api/modules/hotels')
+      if (activeTab === 'all' || activeTab === 'restaurants') endpoints.push('/api/modules/restaurants')
+      if (activeTab === 'all' || activeTab === 'yachts') endpoints.push('/api/modules/yachts')
+      if (activeTab === 'all' || activeTab === 'packages') endpoints.push('/api/modules/packages')
+      if (activeTab === 'all' || activeTab === 'work_contracts') endpoints.push('/api/modules/work_contracts')
+      if (activeTab === 'all' || activeTab === 'visas') endpoints.push('/api/modules/visas')
+
+      const promises = endpoints.map(endpoint => fetch(endpoint).then(res => res.json()))
+      const dataArrays = await Promise.all(promises)
+
+      let allResults: SearchResult[] = []
+      dataArrays.forEach((data, index) => {
+        const type = endpoints[index].split('/').pop()!
+        const formattedData = data.map((item: any) => ({
+          ...item,
+          type,
+          name: item.name || item.title,
+          price: item.price || item.pricePerDay || item.basePrice || item.salary,
+        }))
+        allResults = [...allResults, ...formattedData]
       })
-      const data = await res.json()
-      setFlights(data)
-    } catch (error) {
-      console.error('Search failed:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
-  const handleHotelSearch = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
+      if (query) {
+        allResults = allResults.filter(item =>
+          item.name?.toLowerCase().includes(query.toLowerCase()) ||
+          item.location?.toLowerCase().includes(query.toLowerCase())
+        )
+      }
 
-    const formData = new FormData(e.currentTarget)
-    const searchData = {
-      location: formData.get('location'),
-      checkIn: formData.get('checkIn'),
-      checkOut: formData.get('checkOut'),
-      guests: parseInt(formData.get('guests') as string),
-    }
-
-    try {
-      const res = await fetch('/api/modules/hotels', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(searchData),
-      })
-      const data = await res.json()
-      setHotels(data)
+      setResults(allResults)
     } catch (error) {
       console.error('Search failed:', error)
     } finally {
@@ -84,184 +69,120 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <header className="bg-white/80 backdrop-blur-md shadow-lg border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <Link href="/" className="text-2xl font-bold text-gray-900">FlyToSky</Link>
+            <Link href="/" className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">FlyToSky</Link>
             <nav className="flex space-x-8">
-              <Link href="/" className="text-gray-900 hover:text-blue-600">Home</Link>
-              <Link href="/packages" className="text-gray-900 hover:text-blue-600">Packages</Link>
-              <Link href="/search" className="text-blue-600">Search</Link>
+              <Link href="/" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Home</Link>
+              <Link href="/packages" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Packages</Link>
+              <Link href="/search" className="text-blue-600 font-medium">Search</Link>
+              <Link href="/yachts" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Yachts</Link>
+              <Link href="/visas" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Visas</Link>
+              <Link href="/admin" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Admin</Link>
             </nav>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-8">Search Flights & Hotels</h1>
-
-        {/* Tabs */}
-        <div className="flex mb-6">
-          <button
-            onClick={() => setActiveTab('flights')}
-            className={`px-6 py-2 rounded-l-lg ${
-              activeTab === 'flights' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-            }`}
-          >
-            Flights
-          </button>
-          <button
-            onClick={() => setActiveTab('hotels')}
-            className={`px-6 py-2 rounded-r-lg ${
-              activeTab === 'hotels' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-            }`}
-          >
-            Hotels
-          </button>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Global Search</h1>
+          <p className="text-xl text-gray-600">Find flights, hotels, restaurants, yachts, packages, work contracts, and visas worldwide</p>
         </div>
 
-        {/* Flight Search */}
-        {activeTab === 'flights' && (
-          <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-            <form onSubmit={handleFlightSearch} className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {/* Search Form */}
+        <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl p-8 mb-12 border border-white/20">
+          <form onSubmit={handleSearch} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Search Query</label>
               <input
-                name="origin"
                 type="text"
-                placeholder="From"
-                className="border border-gray-300 rounded px-3 py-2"
-                required
+                name="query"
+                placeholder="Search by name, location, or type..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                defaultValue={searchQuery}
               />
-              <input
-                name="destination"
-                type="text"
-                placeholder="To"
-                className="border border-gray-300 rounded px-3 py-2"
-                required
-              />
-              <input
-                name="departureDate"
-                type="date"
-                className="border border-gray-300 rounded px-3 py-2"
-                required
-              />
-              <input
-                name="returnDate"
-                type="date"
-                className="border border-gray-300 rounded px-3 py-2"
-              />
-              <select
-                name="passengers"
-                className="border border-gray-300 rounded px-3 py-2"
-                defaultValue="1"
-              >
-                <option value="1">1 Passenger</option>
-                <option value="2">2 Passengers</option>
-                <option value="3">3 Passengers</option>
-                <option value="4">4 Passengers</option>
-              </select>
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-              >
-                {loading ? 'Searching...' : 'Search Flights'}
-              </button>
-            </form>
-          </div>
-        )}
+            </div>
 
-        {/* Hotel Search */}
-        {activeTab === 'hotels' && (
-          <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-            <form onSubmit={handleHotelSearch} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <input
-                name="location"
-                type="text"
-                placeholder="Location"
-                className="border border-gray-300 rounded px-3 py-2"
-                required
-              />
-              <input
-                name="checkIn"
-                type="date"
-                className="border border-gray-300 rounded px-3 py-2"
-                required
-              />
-              <input
-                name="checkOut"
-                type="date"
-                className="border border-gray-300 rounded px-3 py-2"
-                required
-              />
-              <select
-                name="guests"
-                className="border border-gray-300 rounded px-3 py-2"
-                defaultValue="1"
-              >
-                <option value="1">1 Guest</option>
-                <option value="2">2 Guests</option>
-                <option value="3">3 Guests</option>
-                <option value="4">4 Guests</option>
-              </select>
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50 md:col-span-4"
-              >
-                {loading ? 'Searching...' : 'Search Hotels'}
-              </button>
-            </form>
-          </div>
-        )}
+            {/* Category Tabs */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key: 'all', label: 'All' },
+                { key: 'flights', label: 'Flights' },
+                { key: 'hotels', label: 'Hotels' },
+                { key: 'restaurants', label: 'Restaurants' },
+                { key: 'yachts', label: 'Yachts' },
+                { key: 'packages', label: 'Packages' },
+                { key: 'work_contracts', label: 'Work Contracts' },
+                { key: 'visas', label: 'Visas' },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setActiveTab(key as any)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    activeTab === key
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+            >
+              {loading ? 'Searching...' : 'Search'}
+            </button>
+          </form>
+        </div>
 
         {/* Results */}
-        {activeTab === 'flights' && flights.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold">Flight Results</h2>
-            {flights.map((flight) => (
-              <div key={flight.id} className="bg-white p-4 rounded-lg shadow">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold">{flight.airline} {flight.flightNumber}</h3>
-                    <p className="text-sm text-gray-600">
-                      {new Date(flight.departureTime).toLocaleString()} - {new Date(flight.arrivalTime).toLocaleString()}
+        {results.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {results.map((item) => (
+              <div key={`${item.type}-${item.id}`} className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden border border-white/20 hover:shadow-2xl transition-all transform hover:-translate-y-2">
+                {item.image && (
+                  <img src={item.image} alt={item.name} className="w-full h-48 object-cover" />
+                )}
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-xl font-bold text-gray-900">{item.name}</h3>
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium capitalize">
+                      {item.type.replace('_', ' ')}
+                    </span>
+                  </div>
+                  {item.location && (
+                    <p className="text-gray-600 mb-2 flex items-center">
+                      <span className="mr-2">📍</span>{item.location}
                     </p>
-                    <p className="text-sm text-gray-600">Duration: {flight.duration}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-blue-600">${flight.price}</p>
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                      Select
-                    </button>
-                  </div>
+                  )}
+                  {item.finalPrice && (
+                    <p className="text-2xl font-bold text-blue-600 mb-4">${item.finalPrice}</p>
+                  )}
+                  <Link
+                    href={`/${item.type}/${item.id}`}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl text-center block"
+                  >
+                    View Details
+                  </Link>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {activeTab === 'hotels' && hotels.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold">Hotel Results</h2>
-            {hotels.map((hotel) => (
-              <div key={hotel.id} className="bg-white p-4 rounded-lg shadow">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold">{hotel.name}</h3>
-                    <p className="text-sm text-gray-600">{hotel.location}</p>
-                    <p className="text-sm text-gray-600">Rating: {hotel.rating}/5</p>
-                    <p className="text-sm text-gray-600">Amenities: {hotel.amenities.join(', ')}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-blue-600">${hotel.pricePerNight}/night</p>
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                      Select
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+        {results.length === 0 && !loading && searchQuery && (
+          <div className="text-center py-16">
+            <div className="bg-white/60 backdrop-blur-md rounded-2xl p-12 shadow-lg border border-white/20">
+              <p className="text-gray-600 text-xl">No results found for "{searchQuery}". Try different keywords or categories.</p>
+            </div>
           </div>
         )}
       </main>
