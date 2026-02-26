@@ -160,6 +160,7 @@ export default function AdminPage() {
       packages: [
         { name: 'title', label: 'Title', type: 'text' },
         { name: 'location', label: 'Location', type: 'text' },
+        { name: 'category', label: 'Category', type: 'text' },
         { name: 'hotelName', label: 'Hotel Name', type: 'text' },
         { name: 'basePrice', label: 'Base Price', type: 'number' },
         { name: 'nights', label: 'Nights', type: 'number' },

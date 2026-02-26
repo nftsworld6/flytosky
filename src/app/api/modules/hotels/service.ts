@@ -1,11 +1,15 @@
 import { HotelsRepository } from './repository'
-import { MockHotelsProvider } from '@/lib/providers/hotels.provider'
+import { MockHotelsProvider, HotelsProvider } from '@/lib/providers/hotels.provider'
 import { calculateFinalPrice } from '@/lib/pricing/engine'
+import { env } from '@/lib/config/env'
+import { AmadeusProvider } from '@/lib/providers/amadeus.provider'
 import type { SearchHotelsInput, CreateHotelInput, UpdateHotelInput } from './types'
 
 export class HotelsService {
   private repository = new HotelsRepository()
-  private provider = new MockHotelsProvider()
+  private provider: HotelsProvider = env.HOTELS_PROVIDER === 'amadeus'
+    ? new AmadeusProvider(env.AMADEUS_CLIENT_ID || '', env.AMADEUS_CLIENT_SECRET || '')
+    : new MockHotelsProvider()
 
   async getAllHotels() {
     const hotels = await this.repository.findAll()
@@ -29,6 +33,25 @@ export class HotelsService {
   }
 
   async searchHotels(input: SearchHotelsInput) {
+    if (env.HOTELS_PROVIDER === 'amadeus') {
+      // delegate to provider for global search
+      const results = await this.provider.searchHotels({
+        cityCode: input.location,
+        checkInDate: input.checkIn,
+        checkOutDate: input.checkOut,
+        adults: input.guests,
+      })
+      return results.map(h => ({
+        id: h.hotelId,
+        name: h.name,
+        location: h.address,
+        rating: h.rating,
+        pricePerNight: h.price,
+        amenities: h.amenities.join(','),
+        finalPrice: calculateFinalPrice({ basePrice: h.price }),
+      }))
+    }
+
     const hotels = await this.repository.searchHotels(input.location)
     return hotels.map(hotel => ({
       ...hotel,

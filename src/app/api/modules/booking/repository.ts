@@ -56,4 +56,8 @@ export class BookingRepository {
       },
     })
   }
+
+  async findUserById(id: string) {
+    return prisma.user.findUnique({ where: { id } })
+  }
 }

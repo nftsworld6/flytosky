@@ -54,8 +54,8 @@ export class BookingService {
         basePrice = car.pricePerDay
         break
       case 'RESTAURANT':
-        // Assume booking for a meal, use a fixed price or from restaurant
-        basePrice = 50 // Placeholder, could be dynamic
+        const restaurant = await this.restaurantsService.getRestaurantById(input.itemId)
+        basePrice = restaurant.priceRange ? parseFloat(restaurant.priceRange.replace(/[^0-9\.]/g, '')) || 50 : 50
         break
       case 'WORK_CONTRACT':
         // Work contracts might not have booking price, but for consistency
@@ -67,12 +67,62 @@ export class BookingService {
 
     const totalPrice = calculateFinalPrice({ basePrice })
 
-    return this.repository.create({
+    const booking = await this.repository.create({
       userId: input.userId,
       type: input.type,
       itemId: input.itemId,
       totalPrice,
+      affiliateId: input.affiliateId || null,
     })
+
+    // تتبع الإحالة في حالة وجود affiliateId
+    if (input.affiliateId) {
+      await this.trackReferral(input.affiliateId, booking.id, basePrice, input.productType || input.type)
+    }
+
+    // بعد إنشاء الحجز، إرسال إشعارات
+    try {
+      const user = await this.repository.findUserById(input.userId)
+      const userEmail = user?.email
+      if (input.type === 'RESTAURANT') {
+        const rest = await this.restaurantsService.getRestaurantById(input.itemId)
+        if (rest.contactEmail) {
+          await import('@/lib/notification/mailer').then(m =>
+            m.sendEmail(
+              rest.contactEmail!,
+              'New restaurant reservation',
+              `A new booking has been made for ${rest.name}. Booking ID: ${booking.id}`
+            )
+          )
+        }
+      }
+      if (input.type === 'CAR') {
+        const carInfo = await this.carsService.getCarById(input.itemId)
+        if (carInfo.contactEmail) {
+          await import('@/lib/notification/mailer').then(m =>
+            m.sendEmail(
+              carInfo.contactEmail!,
+              'New car rental reservation',
+              `A new car rental booking has been made for ${carInfo.model}. Booking ID: ${booking.id}`
+            )
+          )
+        }
+      }
+      // Send confirmation to user
+      if (userEmail) {
+        await import('@/lib/notification/mailer').then(m =>
+          m.sendEmail(
+            userEmail,
+            'Booking confirmed',
+            `Your booking (ID ${booking.id}) has been placed successfully.`
+          )
+        )
+      }
+    } catch (err) {
+      console.error('Notification error', err)
+    }
+
+    return booking
   }
 
   async updateBookingStatus(id: string, status: 'PENDING' | 'CONFIRMED' | 'CANCELLED') {

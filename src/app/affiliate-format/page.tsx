@@ -40,10 +40,11 @@ interface AffiliateUser {
 }
 
 export default function AffiliateFormatPage() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'referrals' | 'earnings' | 'settings' | 'links'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'referrals' | 'earnings' | 'settings' | 'links' | 'bookings'>('dashboard')
   const [affiliateData, setAffiliateData] = useState<AffiliateUser | null>(null)
   const [referrals, setReferrals] = useState<Referral[]>([])
   const [earnings, setEarnings] = useState<MonthlyEarning[]>([])
+  const [bookingForm, setBookingForm] = useState({ type: 'PACKAGE', itemId: '', userId: '' })
   const [loading, setLoading] = useState(true)
   const [showCommissionModal, setShowCommissionModal] = useState(false)
   const [commissionForm, setCommissionForm] = useState({
@@ -146,7 +147,7 @@ export default function AffiliateFormatPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation Tabs */}
         <div className="flex space-x-4 mb-8 overflow-x-auto border-b border-white/20">
-          {['dashboard', 'referrals', 'earnings', 'settings', 'links'].map((tab) => (
+          {['dashboard', 'referrals', 'earnings', 'settings', 'links', 'bookings'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
@@ -161,6 +162,7 @@ export default function AffiliateFormatPage() {
               {tab === 'earnings' && 'الأرباح'}
               {tab === 'settings' && 'الإعدادات'}
               {tab === 'links' && 'روابط الدعوة'}
+              {tab === 'bookings' && 'حجز'}
             </button>
           ))}
         </div>
@@ -347,6 +349,81 @@ export default function AffiliateFormatPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Bookings Tab */}
+        {activeTab === 'bookings' && (
+          <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl p-8 border border-white/20">
+            <h2 className="text-2xl font-bold mb-6 text-gray-900">إنشاء حجز جديد</h2>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                try {
+                  const res = await fetch('/api/modules/booking', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      type: bookingForm.type,
+                      itemId: bookingForm.itemId,
+                      userId: bookingForm.userId,
+                      affiliateId: MOCK_AFFILIATE_ID,
+                    }),
+                  })
+                  if (res.ok) {
+                    alert('Booking created successfully')
+                    setBookingForm({ type: 'PACKAGE', itemId: '', userId: '' })
+                  } else {
+                    const data = await res.json()
+                    alert('Error: ' + (data.error || 'unknown'))
+                  }
+                } catch (err) {
+                  console.error(err)
+                  alert('Failed to create booking')
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">نوع الحجز</label>
+                <select
+                  value={bookingForm.type}
+                  onChange={(e) => setBookingForm({ ...bookingForm, type: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="PACKAGE">Package</option>
+                  <option value="FLIGHT">Flight</option>
+                  <option value="HOTEL">Hotel</option>
+                  <option value="CAR">Car</option>
+                  <option value="RESTAURANT">Restaurant</option>
+                  <option value="YACHT">Yacht</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">ID العنصر</label>
+                <input
+                  type="text"
+                  value={bookingForm.itemId}
+                  onChange={(e) => setBookingForm({ ...bookingForm, itemId: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">ID المستخدم</label>
+                <input
+                  type="text"
+                  value={bookingForm.userId}
+                  onChange={(e) => setBookingForm({ ...bookingForm, userId: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                إرسال
+              </button>
+            </form>
           </div>
         )}
 

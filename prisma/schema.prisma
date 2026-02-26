@@ -74,6 +74,7 @@ model Car {
   seats      Int
   image      String?
   description String?
+  contactEmail String?
   fuelType   String?
   transmission String?
   mileage    String?
@@ -97,6 +98,7 @@ model Restaurant {
   description String?
   address    String?
   phone      String?
+  contactEmail String?
   hours      String?
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
@@ -158,6 +160,7 @@ model Package {
   id         String   @id @default(cuid())
   title      String
   location   String
+  category   String?   // e.g., HAJJ, UMRAH, CITY, ADVENTURE
   hotelName  String
   basePrice  Float
   nights     Int
@@ -165,6 +168,7 @@ model Package {
   image      String
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@map("packages")
 }
