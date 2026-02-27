@@ -1,11 +1,12 @@
 import { CarsRepository } from './repository'
 import { calculateFinalPrice } from '@/lib/pricing/engine'
 import type { CreateCarInput, UpdateCarInput } from './types'
+import type { Car } from '@prisma/client'
 
 export class CarsService {
   private repository = new CarsRepository()
 
-  async getAllCars() {
+  async getAllCars(): Promise<(Car & { finalPrice: number })[]> {
     const cars = await this.repository.findAll()
     return cars.map(car => ({
       ...car,
@@ -13,7 +14,7 @@ export class CarsService {
     }))
   }
 
-  async getCarById(id: string) {
+  async getCarById(id: string): Promise<Car & { finalPrice: number }> {
     const car = await this.repository.findById(id)
     if (!car) {
       throw new Error('Car not found')

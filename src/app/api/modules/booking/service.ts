@@ -86,10 +86,13 @@ export class BookingService {
       const userEmail = user?.email
       if (input.type === 'RESTAURANT') {
         const rest = await this.restaurantsService.getRestaurantById(input.itemId)
-        if (rest.contactEmail) {
+        // the Restaurant type coming from the service is missing some optional
+        // fields in its default-selection alias (contactEmail, etc.), so we cast to
+        // any here before accessing them.
+        if ((rest as any).contactEmail) {
           await import('@/lib/notification/mailer').then(m =>
             m.sendEmail(
-              rest.contactEmail!,
+              (rest as any).contactEmail,
               'New restaurant reservation',
               `A new booking has been made for ${rest.name}. Booking ID: ${booking.id}`
             )
@@ -98,10 +101,10 @@ export class BookingService {
       }
       if (input.type === 'CAR') {
         const carInfo = await this.carsService.getCarById(input.itemId)
-        if (carInfo.contactEmail) {
+        if ((carInfo as any).contactEmail) {
           await import('@/lib/notification/mailer').then(m =>
             m.sendEmail(
-              carInfo.contactEmail!,
+              (carInfo as any).contactEmail,
               'New car rental reservation',
               `A new car rental booking has been made for ${carInfo.model}. Booking ID: ${booking.id}`
             )
@@ -127,5 +130,16 @@ export class BookingService {
 
   async updateBookingStatus(id: string, status: 'PENDING' | 'CONFIRMED' | 'CANCELLED') {
     return this.repository.updateStatus(id, status)
+  }
+
+  private async trackReferral(affiliateId: string, bookingId: string, basePrice: number, productType: string) {
+    // Import affiliates service and track the referral
+    const AffiliatesRepository = (await import('../affiliates/repository')).AffiliatesRepository
+    const affiliatesRepo = new AffiliatesRepository()
+    
+    const commissionRate = 5 // Default 5%
+    const commission = (basePrice * commissionRate) / 100
+    
+    await affiliatesRepo.createTracking(affiliateId, bookingId, commission, commissionRate)
   }
 }

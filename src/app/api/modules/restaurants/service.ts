@@ -1,11 +1,12 @@
 import { RestaurantsRepository } from './repository'
 import { calculateFinalPrice } from '@/lib/pricing/engine'
 import type { CreateRestaurantInput, UpdateRestaurantInput } from './types'
+import type { Restaurant } from '@prisma/client'
 
 export class RestaurantsService {
   private repository = new RestaurantsRepository()
 
-  async getAllRestaurants() {
+  async getAllRestaurants(): Promise<(Restaurant & { finalPrice: number })[]> {
     const restaurants = await this.repository.findAll()
     return restaurants.map(restaurant => ({
       ...restaurant,
@@ -13,7 +14,7 @@ export class RestaurantsService {
     }))
   }
 
-  async getRestaurantById(id: string) {
+  async getRestaurantById(id: string): Promise<Restaurant & { finalPrice: number }> {
     const restaurant = await this.repository.findById(id)
     if (!restaurant) {
       throw new Error('Restaurant not found')

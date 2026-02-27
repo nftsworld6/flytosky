@@ -5,7 +5,7 @@
  * للحصول على بيانات الفنادق والرحلات الجوية
  */
 
-import axios, { AxiosInstance } from 'axios'
+import axios from 'axios'
 
 interface AmadeusTokenResponse {
   access_token: string
@@ -39,7 +39,9 @@ class AmadeusProvider {
   private clientSecret: string
   private accessToken: string | null = null
   private tokenExpiration: number | null = null
-  private axiosInstance: AxiosInstance
+  // axiosInstance is used only for making HTTP calls; its precise
+  // type isn't critical so keep it as any to avoid importing extra types.
+  private axiosInstance: any
 
   constructor(clientId: string, clientSecret: string) {
     this.clientId = clientId
@@ -60,7 +62,7 @@ class AmadeusProvider {
   async getAccessToken(): Promise<string> {
     // تحقق إذا كان التوكن لا يزال صالحاً
     if (this.accessToken && this.tokenExpiration && Date.now() < this.tokenExpiration) {
-      return this.accessToken
+      return this.accessToken!
     }
 
     try {

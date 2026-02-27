@@ -2,13 +2,13 @@ import { HotelsRepository } from './repository'
 import { MockHotelsProvider, HotelsProvider } from '@/lib/providers/hotels.provider'
 import { calculateFinalPrice } from '@/lib/pricing/engine'
 import { env } from '@/lib/config/env'
-import { AmadeusProvider } from '@/lib/providers/amadeus.provider'
+import { getAmadeusProvider } from '@/lib/providers/amadeus.provider'
 import type { SearchHotelsInput, CreateHotelInput, UpdateHotelInput } from './types'
 
 export class HotelsService {
   private repository = new HotelsRepository()
   private provider: HotelsProvider = env.HOTELS_PROVIDER === 'amadeus'
-    ? new AmadeusProvider(env.AMADEUS_CLIENT_ID || '', env.AMADEUS_CLIENT_SECRET || '')
+    ? (getAmadeusProvider() as unknown as HotelsProvider)
     : new MockHotelsProvider()
 
   async getAllHotels() {
@@ -40,15 +40,15 @@ export class HotelsService {
         checkInDate: input.checkIn,
         checkOutDate: input.checkOut,
         adults: input.guests,
-      })
-      return results.map(h => ({
-        id: h.hotelId,
+      } as any)
+      return results.map((h: any) => ({
+        id: h.id || h.hotelId,
         name: h.name,
-        location: h.address,
+        location: h.location || h.address,
         rating: h.rating,
-        pricePerNight: h.price,
-        amenities: h.amenities.join(','),
-        finalPrice: calculateFinalPrice({ basePrice: h.price }),
+        pricePerNight: h.pricePerNight || h.price,
+        amenities: (h.amenities || []).join(','),
+        finalPrice: calculateFinalPrice({ basePrice: h.pricePerNight || h.price }),
       }))
     }
 

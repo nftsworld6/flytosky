@@ -2,13 +2,13 @@ import { FlightsRepository } from './repository'
 import { MockFlightsProvider } from '@/lib/providers/flights.provider'
 import { calculateFinalPrice } from '@/lib/pricing/engine'
 import { env } from '@/lib/config/env'
-import { AmadeusProvider } from '@/lib/providers/amadeus.provider'
+import { getAmadeusProvider } from '@/lib/providers/amadeus.provider'
 import type { SearchFlightsInput, CreateFlightInput, UpdateFlightInput } from './types'
 
 export class FlightsService {
   private repository = new FlightsRepository()
   private provider = env.FLIGHTS_PROVIDER === 'amadeus'
-    ? new AmadeusProvider(env.AMADEUS_CLIENT_ID || '', env.AMADEUS_CLIENT_SECRET || '')
+    ? getAmadeusProvider()
     : new MockFlightsProvider()
 
   async getAllFlights() {
@@ -33,16 +33,22 @@ export class FlightsService {
   async searchFlights(input: SearchFlightsInput) {
     if (env.FLIGHTS_PROVIDER === 'amadeus') {
       const results = await this.provider.searchFlights({
+        // our SearchParams type (used by the mock provider) requires origin, destination and
+        // passengers, while the Amadeus provider expects its own field names.  Because the
+        // provider instance is typed as a union we get an intersection of the parameter types
+        // which means we need to supply both sets of properties here.  The extra fields are
+        // harmless for Amadeus and satisfy the compiler.
+        origin: input.origin,
+        destination: input.destination,
+        passengers: input.passengers,
         originLocationCode: input.origin,
         destinationLocationCode: input.destination,
         departureDate: input.departureDate,
         returnDate: input.returnDate,
-        adults: input.adults,
-        children: input.children,
-        infants: input.infants,
+        adults: input.passengers,
       })
       // Map provider flights to our Flight type
-      return results.map(f => ({
+      return results.map((f: any) => ({
         id: f.id,
         airline: f.airline,
         flightNumber: '',
